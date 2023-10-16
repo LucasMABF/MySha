@@ -1,12 +1,28 @@
 pub mod binary_handling{
-    pub fn get_binary_message(message: String) -> String{
-        let bytes = message.into_bytes();
+    pub fn get_binary_message(message: &str) -> String{
+        let bytes = message.to_owned().into_bytes();
         let mut bits = String::new();
         
         for byte in bytes{
             bits += format!("{:08b}", byte).as_ref();
         }
 
+        bits
+    }
+
+    pub fn validate_bits(message: &str){
+        for bit in message.chars(){
+            if bit != '0' && bit != '1'{
+                panic!("Error while parsing binary value. invalid binary input.")
+            }
+        }
+    }
+
+    pub fn get_bits_hex(message: &str) -> String{
+        let mut bits = String::new();
+        for hex in message.chars(){
+            bits += format!("{:04b}", u8::from_str_radix(hex.to_string().as_str(), 16).expect("Error while parsing hexadecimal value. Invalid Hex input.")).as_str();
+        }
         bits
     }
 
@@ -34,7 +50,7 @@ pub mod binary_handling{
         message_blocks
     }
 
-    pub fn get_message_schedule(block: String) -> Vec<u32>{
+    pub fn get_message_schedule(block: &str) -> Vec<u32>{
         let mut message_schedule = Vec::new();
 
         for i in (0..block.len()).step_by(32){
@@ -51,9 +67,8 @@ pub mod operations{
     pub fn add(a: u32, b: u32) -> u32{
         let a:u64 = a as u64;
         let b:u64 = b as u64;
-        let bits = format!("{:032b}", a + b);
-        let bits = &bits[bits.len() - 32..];
-        u32::from_str_radix(bits, 2).unwrap()
+        let bits:u32 = ((a + b) % (2 as u64).pow(32)) as u32;
+        bits
     }
 
     pub fn addn(nums: Vec<u32>) -> u32{
@@ -108,10 +123,10 @@ pub mod operations{
         let mut res = String::new();
 
         for ((ia, ib), ic) in a.chars().zip(b.chars()).zip(c.chars()){
-            if (ia == '0' && ib == '0') || (ib == '0' && ic == '0') || (ia == '0' && ic == '0'){
-                res.push('0');
+            if ia == ib{
+                res.push(ia);
             }else{
-                res.push('1');
+                res.push(ic);
             }
         }
 
@@ -122,7 +137,7 @@ pub mod operations{
 
 
 pub mod constants{
-    fn get_primes(n: u8) -> Vec<f64>{
+    pub fn get_primes(n: u8) -> Vec<f64>{
         let mut primes = Vec::new();
         let mut i = 2;
         while primes.len() < n.into(){

@@ -20,7 +20,7 @@ pub fn cleartop(){
 }
 
 pub fn blink(m: &str){
-    printf(format!("\x1b[5m\x1b[4m\x1b[36m{}\x1b[m", m).as_str())
+    printf(format!("\x1b[5m\x1b[4m\x1b[36m{}\x1b[m", m).as_str());
 }
 
 pub fn wait(enter: bool, time: u64){
@@ -47,7 +47,6 @@ pub mod binary_handling_animated{
 
     pub fn pad(message: &mut String){
         let size = message.len();
-        let size = format!("{:064b}", size);
 
         *message += "1";
         printf("\x1b[32m1\x1b[m");
@@ -62,6 +61,8 @@ pub mod binary_handling_animated{
         }
         printf("\x1b[m");
 
+        let size = format!("{:064b}", size);
+
         *message += size.as_str();
         printf("\x1b[36m");
         printf(format!("{}", size).as_str());
@@ -70,11 +71,11 @@ pub mod binary_handling_animated{
 
     }
 
-    pub fn get_message_schedule(block: &str, index: usize) -> Vec<u32>{
+    pub fn get_message_schedule(enter: bool, block: &str, index: usize) -> Vec<u32>{
         let mut message_schedule = Vec::new();
 
         printf(format!("message block[{}]: {}", index, &block).as_str());
-        wait(false, 1000);
+        wait(enter, 1000);
 
         for i in (0..block.len()).step_by(32){
             top();
@@ -98,7 +99,7 @@ pub mod binary_handling_animated{
                     println!("w{:02}: ", j);
                 }
             }
-            wait(false, 400);
+            wait(enter, 400);
 
         }
 
@@ -138,112 +139,112 @@ pub mod binary_handling_animated{
         }
     }
 
-    pub fn sigma0(enter: bool, sample: &str){
+    pub fn l_sigma0(enter: bool, sample: &str){
         println!("sigma 0\n");
         println!("x      : {}", sample);
         println!("{:->41}", "");
         println!("ROTR 7 : {}", sample);
         println!("ROTR 18: {}", sample);
         println!("SHR 3  : {}", sample);
-        wait(enter, 200);
+        wait(enter, 2000);
         printf("\x1b[3A\x1b[9C");
         let n1 = rotr(u32::from_str_radix(sample, 2).unwrap(), 7);
-        wait(enter, 200);
+        wait(enter, 500);
         printf("\x1b[B");
         let n2 = rotr(u32::from_str_radix(sample, 2).unwrap(), 18);
         printf("\x1b[B");
-        wait(enter, 200);
+        wait(enter, 500);
         let n3 = shr(u32::from_str_radix(sample, 2).unwrap(), 3);
-        wait(enter, 200);
+        wait(enter, 500);
         printf("\x1b[A\x1b[32C XOR");
         printf("\x1b[B\x1b[4D XOR\n");
         println!("{: >9}{:->32}", "", "");
         print!("{: >9}", "");
-        wait(enter, 200);
+        wait(enter, 500);
         xor(n1, n2, n3);
         wait(enter, 500);
-        cleartop();
+        printf("\x1b[H\x1b[2E\x1b[J");
     }
 
-    pub fn sigma1(enter: bool, sample: &str){
+    pub fn l_sigma1(enter: bool, sample: &str){
         println!("sigma 1\n");
         println!("x      : {}", sample);
         println!("{:->41}", "");
         println!("ROTR 17: {}", sample);
         println!("ROTR 19: {}", sample);
         println!("SHR 10 : {}", sample);
-        wait(enter, 200);
+        wait(enter, 2000);
         printf("\x1b[3A\x1b[9C");
         let n1 = rotr(u32::from_str_radix(sample, 2).unwrap(), 17);
-        wait(enter, 200);
+        wait(enter, 500);
         printf("\x1b[B");
         let n2 = rotr(u32::from_str_radix(sample, 2).unwrap(), 19);
         printf("\x1b[B");
-        wait(enter, 200);
+        wait(enter, 500);
         let n3 = shr(u32::from_str_radix(sample, 2).unwrap(), 10);
-        wait(enter, 200);
+        wait(enter, 500);
         printf("\x1b[A\x1b[32C XOR");
         printf("\x1b[B\x1b[4D XOR\n");
         println!("{: >9}{:->32}", "", "");
         print!("{: >9}", "");
-        wait(enter, 200);
+        wait(enter, 500);
         xor(n1, n2, n3);
         wait(enter, 500);
-        cleartop();
+        printf("\x1b[H\x1b[2E\x1b[J");
     }
 
-    pub fn SIGMA0(enter: bool, sample: &str){
+    pub fn u_sigma0(enter: bool, sample: &str){
         println!("SIGMA 0\n");
         println!("x      : {}", sample);
         println!("{:->41}", "");
         println!("ROTR 2 : {}", sample);
         println!("ROTR 13: {}", sample);
         println!("ROTR 22: {}", sample);
-        wait(enter, 200);
+        wait(enter, 2000);
         printf("\x1b[3A\x1b[9C");
         let n1 = rotr(u32::from_str_radix(sample, 2).unwrap(), 2);
-        wait(enter, 200);
+        wait(enter, 500);
         printf("\x1b[B");
         let n2 = rotr(u32::from_str_radix(sample, 2).unwrap(), 13);
         printf("\x1b[B");
-        wait(enter, 200);
+        wait(enter, 500);
         let n3 = rotr(u32::from_str_radix(sample, 2).unwrap(), 22);
-        wait(enter, 200);
+        wait(enter, 500);
         printf("\x1b[A\x1b[32C XOR");
         printf("\x1b[B\x1b[4D XOR\n");
         println!("{: >9}{:->32}", "", "");
         print!("{: >9}", "");
-        wait(enter, 200);
+        wait(enter, 500);
         xor(n1, n2, n3);
         wait(enter, 500);
-        cleartop();
+        printf("\x1b[H\x1b[2E\x1b[J");
     }
     
-    pub fn SIGMA1(enter: bool, sample: &str){
+    pub fn u_sigma1(enter: bool, sample: &str){
         println!("SIGMA 1\n");
         println!("x      : {}", sample);
         println!("{:->41}", "");
         println!("ROTR 6 : {}", sample);
         println!("ROTR 11: {}", sample);
         println!("ROTR 25: {}", sample);
-        wait(enter, 200);
+        wait(enter, 2000);
         printf("\x1b[3A\x1b[9C");
         let n1 = rotr(u32::from_str_radix(sample, 2).unwrap(), 6);
-        wait(enter, 200);
+        wait(enter, 500);
         printf("\x1b[B");
         let n2 = rotr(u32::from_str_radix(sample, 2).unwrap(), 11);
         printf("\x1b[B");
-        wait(enter, 200);
+        wait(enter, 500);
         let n3 = rotr(u32::from_str_radix(sample, 2).unwrap(), 25);
-        wait(enter, 200);
+        wait(enter, 500);
         printf("\x1b[A\x1b[32C XOR");
         printf("\x1b[B\x1b[4D XOR\n");
         println!("{: >9}{:->32}", "", "");
         print!("{: >9}", "");
-        wait(enter, 200);
+        wait(enter, 500);
         xor(n1, n2, n3);
         wait(enter, 500);
-        cleartop();
+        printf("\x1b[H\x1b[2E\x1b[J");
     }
 
     pub fn choice(enter: bool, sample1: &str, sample2: &str, sample3: &str){
@@ -252,7 +253,7 @@ pub mod binary_handling_animated{
         println!("y: {}", sample2);
         println!("z: {}", sample3);
         println!("{:->35}", "");
-        wait(enter, 200);
+        wait(enter, 2000);
         for i in 0..32{
             printf(format!("\x1b[5F\x1b[{}C\u{2193}\x1b[0K", (31 - i) + 3).as_str());
             if &sample1[(31 - i)..(32 - i)] == "1"{
@@ -263,9 +264,9 @@ pub mod binary_handling_animated{
                 printf(format!("\x1b[{}C{}", (31 - i) + 3, &sample3[(31 - i)..(32 - i)]).as_str());
 
             }
-            wait(enter, 200);
+            wait(enter, 500);
         }
-        cleartop();
+        printf("\x1b[H\x1b[2E\x1b[J");
 
     }
 
@@ -275,7 +276,7 @@ pub mod binary_handling_animated{
         println!("y: {}", sample2);
         println!("z: {}", sample3);
         println!("{:->35}", "");
-        wait(enter, 200);
+        wait(enter, 2000);
         for i in 0..32{
             printf(format!("\x1b[5F\x1b[{}C\u{2193}\x1b[0K\x1b[5E", (31 - i) + 3).as_str());
             if &sample1[(31 - i)..(32 - i)] == &sample2[(31 - i)..(32 - i)]{
@@ -284,24 +285,24 @@ pub mod binary_handling_animated{
                 printf(format!("\x1b[{}C{}", (31 - i) + 3, &sample3[(31 - i)..(32 - i)]).as_str());
 
             }
-            wait(enter, 200);
+            wait(enter, 500);
         }
-        cleartop();
+        printf("\x1b[H\x1b[2E\x1b[J");
     }
 
     pub fn animate_operations(enter: bool){
         cleartop();
         println!("Operations\n");
-        wait(enter, 100);
+        wait(enter, 500);
         let sample = "00000000111111110000000011111111";
         
-        sigma0(enter, sample);
+        l_sigma0(enter, sample);
 
-        sigma1(enter, sample);
+        l_sigma1(enter, sample);
 
-        SIGMA0(enter, sample);
+        u_sigma0(enter, sample);
 
-        SIGMA1(enter, sample);
+        u_sigma1(enter, sample);
 
         let sample1 = "00000000000000001111111111111111";
         let sample2 = "11111111111111110000000000000000";
@@ -309,9 +310,12 @@ pub mod binary_handling_animated{
         choice(enter, sample, sample1, sample2);
         
         majority(enter, sample, sample1, sample2);
+
+        cleartop();
     }
 
     pub fn animate_a(enter: bool){
+        wait(enter, 1000);
         let primes = helper_functions::constants::get_primes(8);
         for i in 0..8{
             println!("{} = \u{221a}{}", (i as u8 + 97) as char, primes[i]);
@@ -342,9 +346,10 @@ pub mod binary_handling_animated{
         }
     }
 
-    pub fn animate_K(enter: bool){
+    pub fn animate_k(enter: bool){
         println!("Constants K\n");
         println!("{:->12}", "");
+        wait(enter, 1000);
         
         let primes = helper_functions::constants::get_primes(64);
 
@@ -373,63 +378,63 @@ pub mod binary_handling_animated{
             if i < 64{
                 println!();
             }
-            wait(enter, 100);
+            wait(enter, 500);
         }
     }
 
-    pub fn save_a(A: &Vec<u32>, enter: bool){
-        for a in A.iter().rev(){
+    pub fn save_a(a: &Vec<u32>, enter: bool){
+        for a in a.iter().rev(){
             blink(format!("\x1b[F\x1b[4C{:032b}", a).as_str());
         }
-        wait(enter, 200);
+        wait(enter, 800);
 
         printf("\x1b[1000C\x1b[36D");
 
-        for (k, a) in A.iter().enumerate(){
+        for (k, a) in a.iter().enumerate(){
             blink(format!("{} = {:032b}\x1b[B\x1b[36D", (k as u8 + 97) as char, a).as_str());
         }
-        wait(enter, 400);
+        wait(enter, 500);
         printf("\x1b[8A");
 
-        for (k, a) in A.iter().enumerate(){
+        for (k, a) in a.iter().enumerate(){
             printf(format!("{} = {:032b}\x1b[B\x1b[36D", (k as u8 + 97) as char, a).as_str());
         }
 
-        for a in A.iter().rev(){
+        for a in a.iter().rev(){
             printf(format!("\x1b[F\x1b[4C{:032b}", a).as_str());
         }
         printf("\x1b[8E");
     }
 
-    pub fn restore_a(A: &Vec<u32>, enter:bool, erase:bool){
+    pub fn restore_a(a: &Vec<u32>, enter:bool, erase:bool){
         printf("\x1b7");
 
         printf("\x1b[1000C\x1b[36D");
-        for (k, a) in A.iter().enumerate(){
+        for (k, a) in a.iter().enumerate(){
             blink(format!("{} = {:032b}\x1b[B\x1b[36D", (k as u8 + 97) as char, a).as_str());
         }
         printf("\x1b8");
-        wait(enter, 200);
+        wait(enter, 800);
 
-        for a in A.iter(){
+        for a in a.iter(){
             blink(format!("{:032b}\x1b[B\x1b[32D", a).as_str());
         }
         printf("\x1b8");
-        wait(enter, 400);
+        wait(enter, 500);
         
         if erase{
-            for a in A.iter(){
-                printf(format!("\x1b[0K{:032b}\x1b[B\x1b[32D", a).as_str());
+            for a in a.iter(){
+                printf(format!("\x1b[0K{:032b} (mod 2**32)\x1b[B\x1b[44D", a).as_str());
             }
         }else{
 
-            for a in A.iter(){
+            for a in a.iter(){
                 printf(format!("{:032b}\x1b[B\x1b[32D", a).as_str());
             }
             printf("\x1b8");
 
             printf("\x1b[1000C\x1b[36D");
-            for (k, a) in A.iter().enumerate(){
+            for (k, a) in a.iter().enumerate(){
                 printf(format!("{} = {:032b}\x1b[B\x1b[36D", (k as u8 + 97) as char, a).as_str());
             }
         }
@@ -437,12 +442,12 @@ pub mod binary_handling_animated{
         printf("\x1b8");
     }
 
-    pub fn keep_a(A: &Vec<u32>){
+    pub fn keep_a(a: &Vec<u32>){
         printf("\x1b7\x1b[0H");
 
         printf(format!("{: >530}\x1b[11E\x1b[1000C\x1b[36D", "").as_str());
 
-        for (k, a) in A.iter().enumerate(){
+        for (k, a) in a.iter().enumerate(){
             printf(format!("{} = {:032b}\x1b[B\x1b[36D", (k as u8 + 97) as char, a).as_str());
         }
 

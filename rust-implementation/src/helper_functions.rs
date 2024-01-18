@@ -39,7 +39,7 @@ pub mod binary_handling{
         *message += size.as_ref();
     }
 
-    pub fn get_message_blocks(message: String) -> Vec<String>{
+    pub fn get_message_blocks(message: &str) -> Vec<String>{
         let mut message_blocks = Vec::new();
 
         for i in (0..message.len()).step_by(512){
@@ -82,19 +82,19 @@ pub mod operations{
 
     }
 
-    pub fn sigma0(bits: u32) -> u32{
+    pub fn l_sigma0(bits: u32) -> u32{
         bits.rotate_right(7) ^ bits.rotate_right(18) ^ bits >> 3
     }
 
-    pub fn sigma1(bits: u32) -> u32{
+    pub fn l_sigma1(bits: u32) -> u32{
         bits.rotate_right(17) ^ bits.rotate_right(19) ^ bits >> 10
     }
 
-    pub fn SIGMA0(bits: u32) -> u32{
+    pub fn u_sigma0(bits: u32) -> u32{
         bits.rotate_right(2) ^ bits.rotate_right(13) ^ bits.rotate_right(22)
     }
 
-    pub fn SIGMA1(bits: u32) -> u32{
+    pub fn u_sigma1(bits: u32) -> u32{
         bits.rotate_right(6) ^ bits.rotate_right(11) ^ bits.rotate_right(25)
     }
 
@@ -160,25 +160,25 @@ pub mod constants{
     }
 
     pub fn initialize_a() -> Vec<u32>{
-        let mut A = Vec::new();
+        let mut a = Vec::new();
         let primes = get_primes(8);
 
         for i in primes{
-            A.push(((i.sqrt() - i.sqrt().trunc()) * (2 as f64).powf(32.0)) as u32)
+            a.push(((i.sqrt() - i.sqrt().trunc()) * (2 as f64).powf(32.0)) as u32)
         }
 
-        A
+        a
 
     }
 
     pub fn initialize_k() -> Vec<u32>{
-        let mut K = Vec::new();
+        let mut k = Vec::new();
         let primes = get_primes(64);
 
         for i in primes{
-            K.push(((i.cbrt() - i.cbrt().trunc()) * (2 as f64).powf(32.0)) as u32)
+            k.push(((i.cbrt() - i.cbrt().trunc()) * (2 as f64).powf(32.0)) as u32)
         }
 
-        K
+        k
     }
 }

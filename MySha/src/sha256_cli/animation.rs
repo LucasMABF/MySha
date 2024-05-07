@@ -1,9 +1,11 @@
 use std::io::{self, Write, stdout};
 use std::{thread, time::Duration};
 
+use crate::Exit;
+
 pub fn printf(m: &str){
     print!("{}", m);
-    stdout().flush().unwrap();
+    stdout().flush().exit("error while handling stdout.");
 }
 
 pub fn clear(){
@@ -29,9 +31,12 @@ pub fn wait(enter: bool, time: u64){
         printf("\x1b7");
         printf("\x1b[1000E");
         printf("\x1b[F\x1b[1000C\x1b[15DPress Enter");
-        io::stdin().read_line(&mut s).expect("Error while waiting Enter");
+        io::stdin().read_line(&mut s).exit("Error while waiting Enter.");
         if s != "\r\n"{
-            panic!("You are not supposed to write anything, so the animation will work propperly. just press enter");
+            printf("\x1b[m\x1b[?25h"); // make cursor visible
+            printf("\x1b[?1049l"); // disable alternative buffer, get back to previous state
+            eprintln!("You are not supposed to write anything, so the animation will work propperly. just press Enter.");
+            std::process::exit(0);
         }
         printf("\x1b[F\x1b[1000C\x1b[15D\x1b[0J");
         printf("\x1b8");
@@ -41,8 +46,7 @@ pub fn wait(enter: bool, time: u64){
 }
 
 pub mod binary_handling_animated{
-    use crate::helper_functions;
-
+    use super::super::helper_functions;
     use super::{printf, wait, blink, cleartop, top};
 
     pub fn pad(message: &mut String){

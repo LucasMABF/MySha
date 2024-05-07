@@ -1,62 +1,68 @@
-use clap::{Parser, ValueEnum};
+use clap::{Args, ValueEnum};
 use std::io::{self, IsTerminal, BufRead, Write, Read};
 use std::fs::File;
+use mysha::sha256::{sha256, InputType, HashError, Hash256};
 
-mod helper_functions;
-use helper_functions::*;
 mod animation;
 use animation::*;
+mod helper_functions;
+use helper_functions::*;
 
-/// implementation of sha256 in rust, with animations, to understand the process
-#[derive(Parser, Debug)]
-#[command(name = "mysha")]
-#[command(author = "Lucas")]
-#[command(version = "0.0.42")]
-struct Args{
-    /// messages to be hashed, can also be passed through stdin with |
+use crate::Exit;
+
+#[derive(Args, Debug)]
+pub struct HashArgs{
+    /// messages to be hashed
     messages: Vec<String>,
 
     /// Turn on animation
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long)]
     animation: bool,
 
     /// Step through animation with enter
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long)]
     enter: bool,
     
     /// Verbose output
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long)]
     verbose: bool,
 
     /// Input Type
     #[arg(short, long, default_value_t = Type::Text, value_enum)]
     r#type: Type,
 
-    /// disables extra explanations
-    #[arg(short, long, default_value_t = false)]
+    /// disables extra explanations on animation
+    #[arg(short, long)]
     faster: bool,
 
     /// Turn off separate by lines on stdin passed by |
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long)]
     separate_off: bool,
+
+    /// Display output as little endian
+    #[arg(short, long)]
+    little_endian: bool,
 }
 
 #[derive(Debug, Clone, ValueEnum, PartialEq)]
-enum Type{
-    /// String to be hashed
+pub enum Type{
+    /// String
     Text,
-    /// Binary value to be hasehd
+    /// Binary value
     Binary,
+    /// Little endian binary value
+    LeBinary,
     /// File to be hashed
     File,
     /// Hexadecimal number
     Hex,
+    /// Little endian hexadecimal number
+    LeHex,
     /// Decimal number
     Decimal
 }
 
-fn main() {
-    let args = Args::parse();
+pub fn hash(args: HashArgs) {
     let mut messages = args.messages;
     let mut animation = args.animation;
     let mut enter = args.enter;
@@ -64,6 +70,7 @@ fn main() {
     let type_input = args.r#type;
     let s = args.separate_off;
     let f = args.faster;
+    let le = args.little_endian;
     
     if ! io::stdin().is_terminal(){
         enter = false;
@@ -90,88 +97,45 @@ fn main() {
         print!("Message to hash:  ");
         std::io::stdout().flush().unwrap();
         let mut message = String::new();
-        io::stdin().read_line(&mut message).expect("Error while geting user input");
-        messages.push(message.trim().parse().expect("Error while parsing user input"));
+        io::stdin().read_line(&mut message).expect("Error while getting user input");
+        messages.push(message.replace(['\n', '\r'], ""));
     }
 
     if ! animation{
 
         for (index_message, message) in messages.iter().enumerate(){
 
-            let mut bits = match type_input{
-                Type::Binary => {
-                    binary_handling::validate_bits(message);
-                    message.to_string()
-                },
-                Type::Text => binary_handling::get_binary_message(message),
-                Type::File => {
-                    let mut file = File::open(message).expect("Error while oppening the file");
-                    let mut content = String::new();
-                    file.read_to_string(&mut content).expect("Error while reading the file");
-                    
-                    binary_handling::get_binary_message(&content)
-                },
-                Type::Hex => binary_handling::get_bits_hex(message),
-                Type::Decimal => format!("{:b}", message.parse::<i32>().expect("Error while parsing number. Invalid inpput.")),
+            let hash = match type_input{
+                Type::Binary => sha256(message, InputType::Binary).exit("Error while parsing binary value. invalid binary input."),
+                Type::LeBinary => sha256(message, InputType::LeBinary).exit("Error while parsing little endian binary value."),
+                Type::Text => sha256(message, InputType::Text).unwrap(),
+                Type::File => sha256(message, InputType::File).exit("Error while oppening the file."),
+                Type::Hex => sha256(message, InputType::Hex).exit("Error while parsing hexadecimal value. Invalid Hex input."),
+                Type::LeHex => sha256(message, InputType::LeHex).exit("Error while parsing little endian hexadecimal value."),
+                Type::Decimal => sha256(message, InputType::Decimal).unwrap_or_else(|err| {
+                    match err{
+                        HashError::DecimalTooBig => eprintln!("Error while parsing number. Number is too big, try using type hex."),
+                        _ => eprintln!("Error while parsing number. Invalid input."),
+                    };
+                    std::process::exit(1);
+                }),
             };
 
-            binary_handling::pad(&mut bits);
-
-            let message_blocks = binary_handling::get_message_blocks(&bits);
-
-            let a = constants::initialize_a();
-
-            let (mut a0, mut b0, mut c0, mut d0, mut e0, mut f0, mut g0, mut h0) = (a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
-
-            let k = constants::initialize_k();
-
-
-            for block in message_blocks.iter(){
-                let mut message_schedule = binary_handling::get_message_schedule(block);
-
-                for i in 16..64{
-                    message_schedule.push(operations::addn(vec![operations::l_sigma1(message_schedule[i - 2]), message_schedule[i - 7], operations::l_sigma0(message_schedule[i - 15]), message_schedule[i - 16]]));
-                }
-
-                let (mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut h) = (a0, b0, c0, d0, e0, f0, g0, h0);
-
-                
-                for (i, m) in message_schedule.iter().enumerate(){
-                    let t1 = operations::addn(vec![operations::u_sigma1(e), operations::choice(e, f, g), h, k[i], *m]);
-                    let t2 = operations::add(operations::u_sigma0(a), operations::majority(a, b, c));
-
-                    h = g;
-                    g = f;
-                    f = e;
-                    e = operations::add(d, t1);
-                    d = c;
-                    c = b;
-                    b = a;
-                    a = operations::add(t1, t2);
-                }
-
-                a0 = operations::add(a, a0);
-                b0 = operations::add(b, b0);
-                c0 = operations::add(c, c0);
-                d0 = operations::add(d, d0);
-                e0 = operations::add(e, e0);
-                f0 = operations::add(f, f0);
-                g0 = operations::add(g, g0);
-                h0 = operations::add(h, h0);
-            }
-
-            let hash256 = format!("{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}", a0, b0, c0, d0, e0, f0, g0, h0);
             if verbose{
                 print!("[{}]({:70}", index_message, message.to_owned() + "): ");
 
             }
-            println!("{}", hash256);
+            if le{
+                println!("{}", hash.get_hex_le());
+            }else{
+                println!("{}", hash);
+            }
         }
     }else{
         ctrlc::set_handler(|| {
             printf("\x1b[m\x1b[?25h"); // make cursor visible
             printf("\x1b[?1049l"); // disable alternative buffer, get back to previous state
-            std::process::exit(130);
+            std::process::exit(0);
         }).expect("Error initializing program");
 
         printf("\x1b[?1049h"); // create alternative buffer
@@ -206,28 +170,52 @@ fn main() {
             cleartop();
             if type_input == Type::Text{
                 println!("message: {}", message);
+                wait(enter, 1000);
             }else if type_input == Type::Hex{
                 println!("Hex value: {}", message);
+                wait(enter, 1000);
+            }else if type_input == Type::LeHex{
+                println!("Little endian hex value: {}", message);
+                wait(enter, 1000);
             }else if type_input == Type::Decimal{
                 println!("Decimal value: {}", message);
+                wait(enter, 1000);
+            }else if type_input == Type::LeBinary{
+                println!("Little endian binary value: {}", message);
+                wait(enter, 1000);
             }
-            wait(enter, 1000);
             
             let mut bits = match type_input{
                 Type::Binary => {
-                    binary_handling::validate_bits(message);
+                    binary_handling::validate_bits(message).exit("\x1b[m\x1b[?25h\x1b[?1049lError while parsing binary value. invalid binary input.");
                     message.to_owned()
                 },
+                Type::LeBinary => {
+                    binary_handling:: validate_bits(message).exit("\x1b[m\x1b[?25h\x1b[?1049lError while parsing binary value. invalid binary input.");
+                    if message.len() % 8 != 0{
+                        Err::<Hash256, HashError>(HashError::NotWholeBytes).exit("\x1b[m\x1b[?25h\x1b[?1049lError while parsing binary value.");
+                    }
+                    (0..message.len()).step_by(8).rev().map(|i| &message[i..i+8]).collect()
+                }
                 Type::Text => binary_handling::get_binary_message(message),
                 Type::File => {
-                    let mut file = File::open(message).expect("Error while oppening the file");
+                    let mut file = File::open(message).exit("\x1b[m\x1b[?25h\x1b[?1049lError while oppening the file.");
                     let mut content = String::new();
-                    file.read_to_string(&mut content).expect("Error while reading the file");
+                    file.read_to_string(&mut content).exit("Error while reading the file");
                     
                     binary_handling::get_binary_message(&content)
                 },
-                Type::Hex => binary_handling::get_bits_hex(message),
-                Type::Decimal => format!("{:b}", message.parse::<i32>().expect("Error while parsing number. Invalid inpput.")),
+                Type::Hex => binary_handling::get_bits_hex(message, false).exit("\x1b[m\x1b[?25h\x1b[?1049lError while parsing hexadecimal value."),
+                Type::LeHex => binary_handling::get_bits_hex(message, true).exit("\x1b[m\x1b[?25h\x1b[?1049lError while parsing hexadecimal value."),
+                Type::Decimal => format!("{:b}", message.parse::<i128>().unwrap_or_else(|err| {
+                    printf("\x1b[m\x1b[?25h"); // make cursor visible
+                    printf("\x1b[?1049l"); // disable alternative buffer, get back to previous state
+                    match err.kind(){
+                        std::num::IntErrorKind::PosOverflow => eprintln!("Error while parsing number. Number is too big, try using type hex."),
+                        _ => eprintln!("Error while parsing number. Invalid input."),
+                    };
+                    std::process::exit(1);
+                })),
             };
 
             printf(format!("bits: {}", bits).as_str());
@@ -246,8 +234,12 @@ fn main() {
                     println!("message: {}", message);
                 }else if type_input == Type::Hex{
                     println!("Hex value: {}", message);
+                }else if type_input == Type::LeHex{
+                    println!("Little endian hex value: {}", message);
                 }else if type_input == Type::Decimal{
                     println!("Decimal value: {}", message);
+                }else if type_input == Type::LeBinary{
+                    println!("Little endian binary value: {}", message);
                 }
                 printf(format!("bits: {}", &bits[0..j * 512]).as_str());
                 blink(format!("{}", &bits[j * 512..(j * 512) + 512]).as_str());
@@ -268,8 +260,12 @@ fn main() {
                 println!("message: {}", message);
             }else if type_input == Type::Hex{
                 println!("Hex value: {}", message);
+            }else if type_input == Type::LeHex{
+                println!("Little endian hex value: {}", message);
             }else if type_input == Type::Decimal{
                 println!("Decimal value: {}", message);
+            }else if type_input == Type::LeBinary{
+                println!("Little endian binary value: {}", message);
             }
             println!("bits: {}", bits);
             println!("\x1b[Emessage blocks: {:#?}", message_blocks);
@@ -443,18 +439,34 @@ fn main() {
                     printf("\x1b[8E\n");
                     wait(enter, 500);
 
+                    printf("hash:");
+                    wait(enter, 200);
                     let mut hash256 = String::new();
                     for (i, j) in a0.iter().enumerate(){
                         blink(format!("\x1b[{}F\x1b[39C{:08x}\x1b[{}E", 9 - i, j, 9 - i).as_str());
                         if i != 0{
-                            printf(format!("\x1b[{}C{:08x}", i * 8, j).as_str());
+                            printf(format!("hash: \x1b[{}C{:08x}", i * 8, j).as_str());
                         }else{
-                            printf(format!("{:08x}", j).as_str());
+                            printf(format!("hash: {:08x}", j).as_str());
                         }
                         hash256 += &format!("{:08x}", j);
                         wait(enter,500);
                         printf(format!("\x1b[{}F\x1b[39C{:08x}\x1b[{}E", 9 - i, j, 9 - i).as_str());
                     }
+                    if le{
+                        printf("\n\nle hex: ");
+                        wait(enter, 200);
+                        hash256 = (0..hash256.len()).step_by(2).rev().map(|i|{
+                            printf(&format!("\x1b[2Fhash: {}", &hash256[0..i]));
+                            blink(&hash256[i..i+2]);
+                            printf(&hash256[i+2..]);
+                            printf(&format!("\x1b[2Ele hex:\x1b[{}C{}",1 + hash256.len() - i - 2, &hash256[i..i+2]));
+                            wait(enter, 500);
+                            &hash256[i..i+2]
+                        }).collect();
+                        printf(&format!("\x1b[2Fhash: {}", &hash256[hash256.len()-2..]));
+                    }
+
                     hashes.push(hash256);
                     wait(enter, 1000);
                 }else{

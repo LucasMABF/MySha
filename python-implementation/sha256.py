@@ -107,7 +107,7 @@ for i in range(8):
 
 
 def main():
-    text = 's'
+    text = 'abc'
 
     bits = ''.join(format(ord(i), '08b') for i in text)
 
@@ -169,5 +169,4 @@ def main():
 
 
 if __name__ == '__main__':
-    pass
     main()

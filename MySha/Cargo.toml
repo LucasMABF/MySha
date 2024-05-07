@@ -9,3 +9,11 @@ edition = "2021"
 clap = {version = "4.4.2", features = ["derive"]}
 ctrlc = "3.4.1"
 is-terminal = "0.4.9"
+num-bigint = {version = "0.4.4", features = ["rand"]}
+num-traits = "0.2.17"
+rand = "0.8.5"
+serde = {version = "1.0.196", features = ["derive"]}
+toml = "0.8.10"
+
+[features]
+# to do

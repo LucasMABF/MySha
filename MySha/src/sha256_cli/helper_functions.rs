@@ -1,4 +1,6 @@
 pub mod binary_handling{
+    use super::super::HashError;
+
     pub fn get_binary_message(message: &str) -> String{
         let bytes = message.to_owned().into_bytes();
         let mut bits = String::new();
@@ -10,33 +12,29 @@ pub mod binary_handling{
         bits
     }
 
-    pub fn validate_bits(message: &str){
+    pub fn validate_bits(message: &str) -> Result<(), HashError>{
         for bit in message.chars(){
             if bit != '0' && bit != '1'{
-                panic!("Error while parsing binary value. invalid binary input.")
+                return Err(HashError::InvalidBinary);
             }
         }
+        Ok(())
     }
 
-    pub fn get_bits_hex(message: &str) -> String{
+    pub fn get_bits_hex(message: &str, le: bool) -> Result<String, HashError>{
         let mut bits = String::new();
+        let mut message = String::from(message);
+        if le{
+            if message.len() % 2 != 0{
+                return Err(HashError::NotWholeBytes);
+            }
+            message = (0..message.len()).step_by(2).rev().map(|i| &message[i..i+2]).collect();
+        }
         for hex in message.chars(){
-            bits += format!("{:04b}", u8::from_str_radix(hex.to_string().as_str(), 16).expect("Error while parsing hexadecimal value. Invalid Hex input.")).as_str();
+            bits += format!("{:04b}", u8::from_str_radix(hex.to_string().as_str(), 16).map_err(|_| HashError::InvalidHex)?).as_str();
         }
-        bits
-    }
-
-    pub fn pad(message: &mut String){
-        let size = message.len();
-        let size = format!("{:064b}", size);
-
-        *message += "1";
-
-        while (message.len() + 64) % 512 != 0{
-            *message += "0";
-        }
-
-        *message += size.as_ref();
+        
+        Ok(bits)
     }
 
     pub fn get_message_blocks(message: &str) -> Vec<String>{
@@ -50,16 +48,6 @@ pub mod binary_handling{
         message_blocks
     }
 
-    pub fn get_message_schedule(block: &str) -> Vec<u32>{
-        let mut message_schedule = Vec::new();
-
-        for i in (0..block.len()).step_by(32){
-            message_schedule.push(u32::from_str_radix(&block[i..i+32], 2).unwrap());
-        }
-
-        message_schedule
-
-    }
 }
 
 
@@ -139,12 +127,14 @@ pub mod operations{
 pub mod constants{
     pub fn get_primes(n: u8) -> Vec<f64>{
         let mut primes = Vec::new();
-        let mut i = 2;
+        primes.push(2 as f64);
+        let mut i: f64 = 3.0;
         while primes.len() < n.into(){
             let mut is_prime = true;
-            for j in 2..i{
-                if i % j == 0{
+            for j in &primes{
+                if i % j == 0.0{
                     is_prime = false;
+                    break;
                 }
             }
 
@@ -152,7 +142,7 @@ pub mod constants{
                 primes.push(i as f64);
             }
 
-            i += 1;
+            i += 1.0;
 
         }
 
